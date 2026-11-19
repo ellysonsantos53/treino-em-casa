@@ -51,6 +51,9 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 24px;-webkit-over
 .hero h2{margin:4px 0 6px}
 .num{font-family:var(--font-d);font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ci{display:grid;gap:6px;margin-top:10px}
+.ci .seg{grid-template-columns:repeat(3,1fr)}
+.ci .seg button{font-size:13px;padding:8px 4px;min-height:38px}
 .stats .stat .num{font-size:28px}
 .stat{background:var(--surface2);border-radius:10px;padding:10px}
 .stat .num{font-size:34px}
@@ -115,8 +118,8 @@ svg.chart text{fill:var(--muted);font-size:10px;font-family:var(--font-b)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;z-index:10;max-width:90%;text-align:center}
 .toast[hidden]{display:none}
 textarea.out{font-size:13px;min-height:120px}
-.bar{height:10px;border-radius:999px;background:var(--surface2);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--ok)}
+.pbar{height:10px;border-radius:999px;background:var(--surface2);overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--ok)}
 .dot.sh{border-style:dashed;border-color:var(--ok);color:var(--ok)}
 .badges{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .badge{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);display:flex;flex-direction:column;gap:2px}
@@ -153,7 +156,7 @@ label.btn{display:flex;align-items:center;justify-content:center;text-align:cent
 .ds{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px}
 .ds .v{font-family:var(--font-d);font-weight:700;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
 .ds.ok{border-color:var(--ok)}
-.ds .bar{margin-top:6px;height:6px}
+.ds .pbar{margin-top:6px;height:6px}
 .cups{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
 .cup{aspect-ratio:3/4;border:2px solid var(--line);border-radius:4px 4px 12px 12px;background:transparent;padding:0}
 .cup.on{border-color:var(--water);background:var(--water)}
@@ -495,7 +498,7 @@ const FIG=(()=>{
 })();
 
 const PCOL={push:'#EF4444',squat:'#2F6BFF',lunge:'#8B5CF6',bridge:'#F59E0B',plank:'#10B981',core:'#10B981',arm:'#06B6D4',pull:'#6366F1',calf:'#EAB308',jump:'#EC4899',run:'#F97316',mobility:'#14B8A6',breath:'#64748B'};
-const SC={FULL:'#2F6BFF',A:'#8B5CF6',B:'#F97316',C:'#06B6D4',F:'#10B981',MIN:'#EC4899'};
+const SC={FULL:'#2F6BFF',A:'#8B5CF6',B:'#F97316',C:'#06B6D4',F:'#10B981',MIN:'#EC4899',SOS:'#F59E0B'};
 const PAT={marcha:'run',ginga:'run',soco:'run',gato_camelo:'mobility',rot_toracica:'mobility',crianca:'mobility',flex_quadril:'mobility',along_peito:'mobility',rot_lombar:'mobility',respiracao:'breath',
  agach_cadeira:'squat',agach_goblet:'squat',flexao:'push',supino_elastico:'push',flexao_diamante:'push',elev_lateral:'arm',triceps_elastico:'arm',rosca:'arm',desenv_ombro:'arm',rosca_martelo:'arm',triceps_frances:'arm',
  dead_bug:'core',curl_up:'core',bird_dog:'core',prancha:'plank',prancha_lat:'plank',afundo_reverso:'lunge',agach_split:'lunge',monster:'lunge',ponte:'bridge',ponte_uni:'bridge',stiff:'bridge',
@@ -547,10 +550,14 @@ const SESS = {
    {e:'gato_camelo',s:1,r:'8 lentas',rest:0},{e:'agach_cadeira',s:2,r:'12',rest:30},{e:'flexao',s:2,r:'o que der, com boa postura',rest:30},
    {e:'ponte',s:2,r:'12',rest:30},{e:'prancha',s:2,r:'20 a 30 s',rest:30},{e:'crianca',s:1,r:'40 s',rest:0}]}
 };
+SESS.SOS={id:'SOS',n:'SOS costas',focus:'Rotina leve para dia de dor, sem saltos e sem carga',nowarm:1,nocool:1,min:10,items:[
+   {e:'gato_camelo',s:1,r:'10 lentas',rest:0},{e:'bird_dog',s:2,r:'6 por lado',rest:20},{e:'dead_bug',s:2,r:'6 por lado',rest:20},
+   {e:'ponte',s:2,r:'10',rest:20},{e:'rot_lombar',s:1,r:'8 por lado',rest:0},{e:'rot_toracica',s:1,r:'8 por lado',rest:0},{e:'crianca',s:1,r:'1 min',rest:0}]};
+const isQ=id=>id==='MIN'||id==='SOS';
 const ORDER=['FULL','A','B','C','F'];
 const SCHED=['FULL','F','FULL','F','FULL','FOCO','F'];
 const WKFOCUS=['A','B','C'];
-const LET={A:'A',B:'B',C:'C',F:'L',MIN:'10'};
+const LET={A:'A',B:'B',C:'C',F:'L',MIN:'10',SOS:'S'};
 
 const GEAR_OWN=[
   {id:'g_halter',n:'Halteres leves (1 a 2 kg)',d:'Servem para ombro, bíceps e aquecimento. Para peito, costas e perna ficam leves demais: por isso a mochila com peso e, depois, os halteres ajustáveis.'},
@@ -578,24 +585,24 @@ const FOOD=[
 ];
 const MEALS=[
  {k:'cafe',n:'Café da manhã',t:'6h às 8h',from:6,to:8,kc:'≈ 500 kcal · 22 a 30 g de proteína',opts:[
-   ['Cuscuz com ovos','1 xícara de cuscuz, 2 ovos mexidos ou cozidos, café com leite.'],
-   ['Ovos com pão','2 a 3 ovos mexidos, 2 fatias de pão, 1 banana, 1 copo de leite.'],
-   ['Aveia cremosa','4 colheres de aveia cozida em 250 ml de leite, 1 banana, 1 colher de pasta de amendoim, 1 ovo cozido.']]},
+   ['Cuscuz com ovos','1 xícara de cuscuz, 2 ovos mexidos ou cozidos, café com leite.',22,['f_cuscuz','f_ovos','f_leite','f_cafe']],
+   ['Ovos com pão','2 a 3 ovos mexidos, 2 fatias de pão, 1 banana, 1 copo de leite.',28,['f_ovos','f_pao','f_banana','f_leite']],
+   ['Aveia cremosa','4 colheres de aveia cozida em 250 ml de leite, 1 banana, 1 colher de pasta de amendoim, 1 ovo cozido.',25,['f_aveia','f_leite','f_banana','f_pasta','f_ovos']]]},
  {k:'almoco',n:'Almoço',t:'11h às 13h',from:11,to:13,kc:'≈ 700 kcal · 35 a 40 g de proteína',opts:[
-   ['Prato base','Arroz (4 colheres), feijão (1 concha), 150 g de frango ou 2 ovos, legumes cozidos e salada à vontade.'],
-   ['Carne moída refogada','Carne moída com tomate e cebola, arroz, feijão, repolho refogado.'],
-   ['Marmita de domingo','Cozinhe 2 kg de frango, arroz e feijão no domingo, porcione e congele. Cenoura, abóbora e chuchu entram como legume.']]},
+   ['Prato base','Arroz (4 colheres), feijão (1 concha), 150 g de frango ou 2 ovos, legumes cozidos e salada à vontade.',45,['f_arroz','f_feijao','f_frango','f_tomate','f_repolho']],
+   ['Carne moída refogada','Carne moída com tomate e cebola, arroz, feijão, repolho refogado.',36,['f_moida','f_tomate','f_cebola','f_arroz','f_feijao','f_repolho']],
+   ['Marmita de domingo','Cozinhe 2 kg de frango, arroz e feijão no domingo, porcione e congele. Cenoura, abóbora e chuchu entram como legume.',45,['f_frango','f_arroz','f_feijao','f_cenoura','f_abobora']]]},
  {k:'lanche',n:'Lanche da tarde (antes do treino)',t:'16h às 17h30',from:16,to:17.5,kc:'≈ 300 kcal · 12 a 15 g de proteína',opts:[
-   ['Iogurte com fruta','Iogurte natural, 1 banana e 2 colheres de aveia.'],
-   ['Pão com ovo','1 pão com ovo mexido ou queijo e 1 fruta.'],
-   ['Banana com pasta de amendoim','2 bananas, 1 colher de pasta de amendoim e 1 copo de leite.']]},
+   ['Iogurte com fruta','Iogurte natural, 1 banana e 2 colheres de aveia.',11,['f_iogurte','f_banana','f_aveia']],
+   ['Pão com ovo','1 pão com ovo mexido ou queijo e 1 fruta.',12,['f_pao','f_ovos','f_queijo','f_fruta2']],
+   ['Banana com pasta de amendoim','2 bananas, 1 colher de pasta de amendoim e 1 copo de leite.',14,['f_banana','f_pasta','f_leite']]]},
  {k:'jantar',n:'Jantar (depois do treino)',t:'20h15 às 21h30',from:20,to:22,kc:'≈ 700 kcal · 35 a 40 g de proteína',opts:[
-   ['Omelete completo','Omelete de 3 ovos com tomate e queijo, arroz e feijão.'],
-   ['Frango com purê','Frango desfiado, purê de batata ou mandioca, salada de tomate e cenoura.'],
-   ['Macarrão com carne','Macarrão ao molho de tomate com carne moída ou frango e cenoura ralada.']]},
+   ['Omelete completo','Omelete de 3 ovos com tomate e queijo, arroz e feijão.',33,['f_ovos','f_tomate','f_queijo','f_arroz','f_feijao']],
+   ['Frango com purê','Frango desfiado, purê de batata ou mandioca, salada de tomate e cenoura.',43,['f_frango','f_batata','f_tomate','f_cenoura']],
+   ['Macarrão com carne','Macarrão ao molho de tomate com carne moída ou frango e cenoura ralada.',30,['f_macarrao','f_tomate','f_moida','f_cenoura']]]},
  {k:'ceia',n:'Ceia (opcional)',t:'30 a 60 min antes de dormir',from:22,to:24,kc:'≈ 150 a 200 kcal · 8 a 10 g de proteína',opts:[
-   ['Leite com banana','1 copo de leite e 1 banana. Só se for dormir mais de 2 horas depois do jantar ou se estiver com fome.'],
-   ['Iogurte natural','1 pote de iogurte natural com 1 colher de aveia.']]}
+   ['Leite com banana','1 copo de leite e 1 banana. Só se for dormir mais de 2 horas depois do jantar ou se estiver com fome.',9,['f_leite','f_banana']],
+   ['Iogurte natural','1 pote de iogurte natural com 1 colher de aveia.',9,['f_iogurte','f_aveia']]]}
 ];
 
 const CORDAS=[['Corda crua',0],['Corda amarela',500],['Corda laranja',1500],['Corda azul',3500],['Corda verde',6500],['Corda roxa',10500],['Corda marrom',16000]];
@@ -837,7 +844,7 @@ function vHoje(){
   const rs=S.rewards.slice().sort((a,b)=>a.c-b.c);
   const nextR=rs.find(r=>r.c>c.avail),canR=rs.filter(r=>r.c<=c.avail);
   const rew=`<section class="card"><div class="row between"><div class="eyebrow">Graduação</div><span class="tag acc">${c.avail} pontos</span></div>
-    <h3 style="margin-top:4px">${esc(cur[0])}</h3><div class="bar" style="margin:8px 0"><i style="width:${pct}%"></i></div>
+    <h3 style="margin-top:4px">${esc(cur[0])}</h3><div class="pbar" style="margin:8px 0"><i style="width:${pct}%"></i></div>
     <p class="small muted">${nx?'Faltam '+(nx[1]-c.total)+' pontos para a '+esc(nx[0].toLowerCase())+'.':'Graduação máxima.'}</p>
     <p class="small" style="margin-top:6px">${canR.length?'Você já pode resgatar: <b>'+esc(canR[canR.length-1].n)+'</b>.':nextR?'Faltam '+(nextR.c-c.avail)+' pontos para: <b>'+esc(nextR.n)+'</b>.':''}</p>
     <button class="btn small ghost" style="margin-top:8px" data-act="tab" data-id="premios">Ver prêmios</button></section>`;
@@ -858,12 +865,16 @@ function vHoje(){
     <div class="row between"><button class="btn primary" style="min-height:46px" data-act="water" data-id="250">+ 1 copo</button><button class="btn small ghost" data-act="water" data-id="-250">Desfazer</button></div>
     <p class="small" style="margin-top:8px;opacity:.85">${waterHint()}</p>
     <button class="btn small ghost" style="margin-top:4px" data-act="tab" data-id="comida">O que posso beber</button></section>`;
+  const prot=MEALS.filter(m=>dr.m&&dr.m[m.k]).reduce((a,m)=>a+menuOpt(m,td)[2],0);
   const mrows=MEALS.map(m=>{const o=menuOpt(m,td);const on=!!(dr.m&&dr.m[m.k]);const now=cm.now&&cm.m.k===m.k;
     return `<div class="mrow ${on?'got':''}"><button class="mchk ${on?'on':''}" data-act="meal" data-id="${m.k}" aria-pressed="${on}" aria-label="Marcar ${m.n} como feita">${on?'✓':''}</button>
-    <div class="stack" style="gap:2px;flex:1"><div class="row" style="gap:6px"><b>${m.n}</b><span class="tag">${m.t}</span>${now?'<span class="tag acc">agora</span>':''}</div>
+    <div class="stack" style="gap:2px;flex:1"><div class="row" style="gap:6px"><b>${m.n}</b><span class="tag">${m.t}</span><span class="tag">≈ ${o[2]} g prot.</span>${now?'<span class="tag acc">agora</span>':''}</div>
     <div class="small"><b>${esc(o[0])}.</b> ${esc(o[1])}</div></div>
     <button class="btn small ghost" data-act="swap" data-id="${m.k}" aria-label="Trocar o prato de ${m.n}">Trocar</button></div>`}).join('');
-  const comida=`<section class="card"><div class="row between"><div class="eyebrow">Comida de hoje</div><span class="tag">≈ 2.350 kcal</span></div><div style="margin-top:8px">${mrows}</div></section>`;
+  const comida=`<section class="card"><div class="row between"><div class="eyebrow">Comida de hoje</div><span class="tag">≈ 2.350 kcal</span></div>
+    <div class="row between" style="margin-top:8px"><span class="small">Proteína nas refeições marcadas</span><b>≈ ${prot} de 115 a 130 g</b></div>
+    <div class="pbar" style="margin:6px 0 10px"><i style="width:${Math.min(100,Math.round(prot/125*100))}%"></i></div>
+    <div>${mrows}</div><p class="tiny muted" style="margin-top:6px">Valores aproximados, só para você ter uma noção.</p></section>`;
   const pw=Math.round((dr.w||0)/WATER_GOAL*100),pm=Math.round(mealsDone/MEALS.length*100);
   const rings=`<div class="rings">
     ${ring(doneToday?100:0,'#2F6BFF',doneToday?ICK.replace('width="16" height="16"','width="26" height="26"'):'0/1','Treino')}
@@ -872,6 +883,7 @@ function vHoje(){
   return `
   ${celeb}
   ${rings}
+  ${checkin()}
   ${treino}
   ${shield}
   <div class="eyebrow" style="margin-top:6px">Exercícios de hoje · deslize</div>
@@ -963,6 +975,18 @@ function wcard(w,title,link){
     <div class="note small" style="margin-top:8px">${esc(weekTip(w))}</div>
     ${link?'<button class="btn small ghost" style="margin-top:8px" data-act="tab" data-id="evolucao">Ver na Evolução</button>':''}</section>`;
 }
+const CI={dor:['Nenhuma','Leve','Forte'],en:['Baixa','Média','Boa'],sono:['Menos de 6 h','6 a 7 h','Mais de 7 h']};
+function checkin(){
+  const r=dayView(todayStr()).ci||{};
+  const row=(k,t)=>`<div class="ci"><span class="small">${t}</span><div class="seg">${CI[k].map((l,i)=>`<button data-act="ci" data-id="${k}:${i}" class="${r[k]===i?'on':''}">${l}</button>`).join('')}</div></div>`;
+  let rec='';
+  if(r.dor!=null||r.en!=null||r.sono!=null){
+    if(r.dor===2)rec=`<div class="note small"><b>Dor forte hoje.</b> Faça o SOS costas, sem saltos e sem carga. Se a dor irradiar para a perna, der formigamento ou piorar, procure um médico.<br><button class="btn small" style="margin-top:8px" data-act="open" data-id="SOS">Abrir SOS costas</button></div>`;
+    else if(r.dor===1||r.en===0||r.sono===0)rec=`<div class="note small"><b>Hoje pegue leve.</b> Faça o treino no modo Reduzido ou o Treino rápido de 10 min. Manter a sequência vale mais que o treino perfeito. Evite saltos se a dor nas costas estiver presente.<br><div class="grid2" style="margin-top:8px"><button class="btn small" data-act="gstart" data-id="MIN">Treino rápido</button><button class="btn small ghost" data-act="open" data-id="F">Dia leve</button></div></div>`;
+    else rec='<div class="note small"><b>Tudo certo.</b> Faça o treino de hoje normalmente.</div>';
+  }
+  return `<section class="card"><div class="eyebrow">Como você está hoje?</div>${row('dor','Dor nas costas')}${row('en','Energia')}${row('sono','Sono da noite')}${rec}</section>`;
+}
 function lembrete(){
   return `<details class="card"><summary>Lembrete diário</summary>
     <div class="stack small" style="margin-top:8px">
@@ -975,7 +999,7 @@ function vTreino(){
   const scard=(k)=>{const s=SESS[k];const seen=[];s.items.forEach(it=>{if(!it.mob&&!seen.includes(it.e))seen.push(it.e)});
     return `<button class="scard ${k===nx?'next':''}" style="--tc:${SC[k]}" data-act="open" data-id="${k}">
       <div class="sf">${seen.slice(0,3).map(e=>FIG.svg(e,{anim:true,dur:3})).join('')}</div>
-      <div class="row between" style="margin-top:8px"><span class="tag" style="background:rgba(0,0,0,.25);color:#fff">${k==='F'?'Dia leve':k==='FULL'?'Todos os grupos':k==='MIN'?'Só 10 min':'Foco'}</span>${k===nx?'<span class="tag" style="background:#fff;color:#0A0F1E">hoje</span>':''}</div>
+      <div class="row between" style="margin-top:8px"><span class="tag" style="background:rgba(0,0,0,.25);color:#fff">${k==='F'?'Dia leve':k==='FULL'?'Todos os grupos':k==='MIN'?'Só 10 min':k==='SOS'?'Dia de dor':'Foco'}</span>${k===nx?'<span class="tag" style="background:#fff;color:#0A0F1E">hoje</span>':''}</div>
       <h3>${esc(s.n)}</h3><div class="sub">${esc(s.focus)} · ${s.min?'≈ '+s.min+' min':'35 a 40 min'}</div></button>`};
   const mini=(k)=>{const s=SESS[k];const first=s.items.find(i=>!i.mob);
     return `<div class="erow"><button class="ebtn" data-act="open" data-id="${k}"><span class="ftile eth" style="--tc:${SC[k]}">${FIG.svg(first.e,{anim:true,dur:3})}</span><span class="et"><b>${esc(s.n)}${k===nx?' · hoje':''}</b><small>${esc(s.focus)} · ≈ ${s.min} min</small></span></button></div>`};
@@ -991,6 +1015,7 @@ function vTreino(){
   <div class="eyebrow" style="margin-top:6px">Dias leves e de pouco tempo</div>
   ${scard('F')}
   ${scard('MIN')}
+  ${scard('SOS')}
   <section class="card chal"><div class="row between"><div class="eyebrow">Desafio das 4 semanas</div><span class="tag">${S.workouts.length} treinos</span></div>${chalGrid()}</section>
   <section class="card"><h3>Regras do treino</h3>
     <ul class="how small">
@@ -1017,7 +1042,7 @@ function sessEntries(s,mode){
     items.filter(i=>i.circ).forEach(it=>add('Circuito · '+rounds+' rodadas',Object.assign({},it,{s:1,rest:0}),'F_'+it.e+'_c',{track:1}));
     items.filter(i=>!i.circ&&!i.mob).forEach(it=>add('Core',it,'F_'+it.e,{track:1}));
     items.filter(i=>i.mob).forEach(it=>add('Mobilidade',it,'F_'+it.e,{track:1,mob:1}));
-  }else items.forEach(it=>add(s.id==='MIN'?'Treino rápido':'Treino',it,s.id+'_'+it.e,{track:1}));
+  }else items.forEach(it=>add(s.id==='MIN'?'Treino rápido':s.id==='SOS'?'SOS costas':'Treino',it,s.id+'_'+it.e,{track:1}));
   if(!s.nocool)COOL.forEach(x=>add('Volta à calma · 3 min',{e:x[0],r:x[1],s:1,rest:10},s.id+'_c_'+x[0],{track:0}));
   return out;
 }
@@ -1030,7 +1055,7 @@ function repParse(r){
   return {n,u:unit+(rest?' '+rest:'')};
 }
 function vSessao(){
-  const s=SESS[ui.session];const mode=s.id==='MIN'?'full':ui.mode;
+  const s=SESS[ui.session];const mode=isQ(s.id)?'full':ui.mode;
   if(ui.ex)return vEx();
   const isShort=mode==='short';
   const ents=sessEntries(s,mode);ui.map={};ents.forEach(x=>ui.map[x.key]=x);
@@ -1045,10 +1070,11 @@ function vSessao(){
       ${x.track?`<button class="ec ${done?'ok':''}" data-act="exchk" data-k="${x.key}" aria-label="Marcar ${esc(EX[x.e].n)}" aria-pressed="${done}">${done?ICK:''}</button>`:''}</div>`;
   });
   return `
-  <section class="hero2" style="--tc:${SC[s.id]||'#2F6BFF'}"><div class="eyebrow">${s.id==='MIN'?'Treino rápido':s.id==='F'?'Dia leve':s.id==='FULL'?'Treino completo':'Foco em um dia'}</div><h2 style="margin-top:2px">${esc(s.n)}</h2><p class="sub">${esc(s.focus)}</p>
-    <div class="mstat"><div><b>${tr.length}</b><span>exercícios</span></div><div><b>${s.id==='MIN'?10:(isShort?22:(s.min||38))}</b><span>minutos</span></div><div><b>${sets}</b><span>séries</span></div></div>
+  <section class="hero2" style="--tc:${SC[s.id]||'#2F6BFF'}"><div class="eyebrow">${s.id==='MIN'?'Treino rápido':s.id==='SOS'?'Dia de dor':s.id==='F'?'Dia leve':s.id==='FULL'?'Treino completo':'Foco em um dia'}</div><h2 style="margin-top:2px">${esc(s.n)}</h2><p class="sub">${esc(s.focus)}</p>
+    <div class="mstat"><div><b>${tr.length}</b><span>exercícios</span></div><div><b>${isQ(s.id)?s.min:(isShort?22:(s.min||38))}</b><span>minutos</span></div><div><b>${sets}</b><span>séries</span></div></div>
   </section>
-  ${s.id==='MIN'?'':`<div class="seg"><button data-act="mode" data-id="full" class="${!isShort?'on':''}">Completo</button><button data-act="mode" data-id="short" class="${isShort?'on':''}">Reduzido</button></div>`}
+  ${s.id==='SOS'?'<div class="note small">Movimentos lentos, sem forçar. Se a dor irradiar para a perna, der formigamento, fraqueza ou piorar, pare e procure um médico.</div>':''}
+  ${isQ(s.id)?'':`<div class="seg"><button data-act="mode" data-id="full" class="${!isShort?'on':''}">Completo</button><button data-act="mode" data-id="short" class="${isShort?'on':''}">Reduzido</button></div>`}
   ${list}
   <details class="card"><summary>Voz do treino</summary>${voiceSettings().replace('<section class="card">','<section>')}</details>
   <section class="card" id="finish">
@@ -1077,7 +1103,31 @@ function vEx(){
   <section class="card"><div class="eyebrow">Como fazer</div>
     <ul class="how">${d.how.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>
     <p class="small" style="margin-top:10px"><b>Atenção:</b> ${esc(d.tip)}</p></section>
+  ${loadCard(e)}
   <button class="btn" data-act="review" data-id="${e.e}">Revisar minha postura</button>`;
+}
+function loadTip(e,last){
+  const m=String(e.r).match(/(\d+)(?:\s*a\s*(\d+))?/);if(!m||/de \d+ s/.test(e.r))return '';
+  const lo=+m[1],hi=+(m[2]||m[1]);const sec=/\bs\b/.test(e.r);
+  if(sec)return last.reps>=hi?'Você bateu o topo da faixa. No próximo treino, tente mais 5 a 10 segundos.':'Repita o tempo e tente chegar a '+hi+' segundos.';
+  if(last.reps>=hi)return last.kg>0?'Você chegou a '+hi+' repetições. No próximo treino, suba um pouco a carga (cerca de 1 kg ou um elástico mais forte) e volte para '+lo+' repetições.':'Você chegou a '+hi+' repetições. Deixe a descida mais lenta (4 s) ou passe para uma versão mais difícil.';
+  if(last.reps<lo)return 'Abaixo da faixa ('+lo+' a '+hi+'). Mantenha ou reduza a carga e foque na técnica.';
+  return 'Dentro da faixa. Repita a carga e tente mais 1 repetição.';
+}
+function loadCard(e){
+  if(!e.track||e.mob||(e.grp||'').startsWith('Aquec')||(e.grp||'').startsWith('Volta'))return '';
+  const L=(S.loads&&S.loads[e.e])||[];const last=L[L.length-1];
+  const sec=/\bs\b/.test(e.r)&&!/de \d+ s/.test(e.r);
+  const hist=L.slice(-4).reverse().map(x=>`<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span>${x.date.split('-').reverse().slice(0,2).join('/')}</span><b>${x.kg>0?x.kg.toString().replace('.',',')+' kg × ':'peso do corpo × '}${x.reps}${sec?' s':''}</b></div>`).join('');
+  const tip=last?loadTip(e,last):'';
+  return `<section class="card"><div class="eyebrow">Sua carga</div>
+    <div class="grid2" style="margin-top:8px">
+      <label class="field"><span>Carga (kg)</span><input type="number" inputmode="decimal" step="0.5" id="lKg" placeholder="0 = peso do corpo" value="${last?last.kg:''}"></label>
+      <label class="field"><span>${sec?'Segundos feitos':'Repetições feitas'}</span><input type="number" inputmode="numeric" id="lRep" placeholder="na melhor série" value="${last?last.reps:''}"></label>
+    </div>
+    <button class="btn" style="margin-top:8px;width:100%" data-act="saveL" data-k="${e.e}">Salvar carga de hoje</button>
+    ${tip?`<div class="note small" style="margin-top:10px">${esc(tip)}</div>`:'<p class="tiny muted" style="margin-top:8px">Anote a carga e as repetições da série mais forte. O app diz quando subir.</p>'}
+    ${hist?`<div style="margin-top:8px">${hist}</div>`:''}</section>`;
 }
 
 function vComida(){
@@ -1097,7 +1147,7 @@ function vComida(){
   ${MEALS.map(m=>`<section class="card meal">
     <div class="row between"><h3>${m.n}</h3><span class="tag">${m.t}</span></div>
     <p class="small muted" style="margin-top:4px">${m.kc}</p>
-    ${m.opts.map(o=>`<div class="opt"><b>${esc(o[0])}</b><span class="small">${esc(o[1])}</span></div>`).join('')}
+    ${m.opts.map(o=>`<div class="opt"><b>${esc(o[0])}</b> <span class="tag">≈ ${o[2]} g de proteína</span><span class="small">${esc(o[1])}</span></div>`).join('')}
   </section>`).join('')}
   <section class="card"><h3>Água e bebidas</h3>
     <p class="small muted" style="margin-top:4px">Meta: 2,5 litros por dia, ou 10 copos de 250 ml.</p>
@@ -1123,6 +1173,20 @@ function vComida(){
   </section>`;
 }
 
+function weekNeeds(){
+  const cnt={};const mk=monKey(todayStr());
+  for(let i=0;i<7;i++){const x=parse(mk);x.setDate(x.getDate()+i);const d=fmt(x);
+    MEALS.forEach(m=>{const o=menuOpt(m,d);(o[3]||[]).forEach(id=>{cnt[id]=(cnt[id]||0)+1})})}
+  return cnt;
+}
+function needCard(){
+  const need=weekNeeds();const all=FOOD.reduce((a,g)=>a.concat(g.items),[]);
+  const todo=all.filter(i=>need[i.id]&&!S.food[i.id]).sort((a,b)=>need[b.id]-need[a.id]);
+  const rows=todo.map(i=>`<label class="item"><input class="chk" type="checkbox" data-act="food" data-id="${i.id}"><span class="t"><b>${esc(i.n)}</b> <span class="tag">${esc(i.q)}</span><br><span class="small muted">Entra em ${need[i.id]} ${need[i.id]===1?'refeição':'refeições'} desta semana</span></span></label>`).join('');
+  return `<section class="card"><div class="row between"><h3>Falta comprar</h3><span class="tag ${todo.length?'':'ok'}">${todo.length} ${todo.length===1?'item':'itens'}</span></div>
+    <p class="tiny muted" style="margin-top:4px">Montado a partir do cardápio de seg a dom desta semana, incluindo as trocas que você fez. Marque quando comprar ou se já tiver em casa.</p>
+    ${rows||'<p class="small" style="margin-top:8px">Tudo do cardápio desta semana já está marcado.</p>'}</section>`;
+}
 function vCompras(){
   const got=id=>!!S.have[id];
   const nb=nextBuy();
@@ -1134,6 +1198,7 @@ function vCompras(){
   <section class="card hero"><div class="eyebrow">Próximo passo</div>
     ${nb?`<h3 style="margin-top:4px">${esc(nb.n)}</h3><p class="small" style="margin-top:6px">${esc(nb.next)}</p>`:`<h3 style="margin-top:4px">Tudo comprado</h3><p class="small" style="margin-top:6px">Foque em progredir a carga e em manter a sequência.</p>`}
     <p class="tiny muted" style="margin-top:8px">Marque "já tenho" conforme comprar. Depois me avise no chat do projeto que eu indico o passo seguinte.</p></section>
+  ${needCard()}
   <section class="card"><h3>Equipamentos que você já tem</h3>${own}</section>
   <section class="card"><h3>Equipamentos para comprar</h3><p class="tiny muted" style="margin-top:4px">Preços de lojas online em novembro de 2026, só como referência. Compare antes de comprar.</p>${buy}</section>
   <div class="row between"><h3>Mercado da semana</h3><span class="tag ${foodH===foodN?'ok':''}">${foodH} de ${foodN}</span></div>
@@ -1209,7 +1274,7 @@ function vPremios(){
   return `
   <section class="card hero"><div class="eyebrow">Graduação</div>
     <h2 style="margin-top:4px">${esc(cur[0])}</h2>
-    <div class="bar" style="margin:10px 0"><i style="width:${pct}%"></i></div>
+    <div class="pbar" style="margin:10px 0"><i style="width:${pct}%"></i></div>
     <p class="small muted">${nx?'Faltam '+(nx[1]-c.total)+' pontos para a '+esc(nx[0].toLowerCase())+'.':'Graduação máxima.'}</p>
     <div class="stats" style="margin-top:12px">
       <div class="stat"><div class="num">${c.avail}</div><div class="tiny muted">pontos para gastar</div></div>
@@ -1250,6 +1315,7 @@ function summary(){
    'Treinos: '+st.total+' no total, sequência '+st.cur+' dia(s), melhor '+st.best+', esta semana '+st.wk+'/5',
    'Últimos treinos: '+(l.map(w=>w.date+' '+w.session+(w.mode==="short"?"(reduzido)":"")+(w.pain!=null?' dor '+w.pain:'')).join('; ')||'nenhum'),
    'Pontos: '+calc().avail+' disponíveis, '+calc().total+' no total ('+CORDAS[calc().lvl][0]+')',
+   'Cargas recentes: '+(Object.keys(S.loads||{}).map(k=>{const a=S.loads[k];const x=a[a.length-1];return (EX[k]?EX[k].n:k)+' '+(x.kg>0?x.kg+' kg':'peso do corpo')+' x '+x.reps}).join('; ')||'nenhuma'),
    'Já tenho: '+(hv.join('; ')||'nada'),'Falta comprar: '+(miss.join('; ')||'nada')].join('\n');
 }
 
@@ -1348,7 +1414,7 @@ function buildSteps(id,mode){
     blocks.push({ph:'Circuito',circ:1,rounds:short?2:3,list:items.filter(i=>i.circ)});
     blocks.push({ph:'Core',list:items.filter(i=>!i.circ&&!i.mob)});
     blocks.push({ph:'Mobilidade',list:items.filter(i=>i.mob)});
-  }else blocks.push({ph:id==='MIN'?'Treino rápido':'Treino',list:items});
+  }else blocks.push({ph:id==='MIN'?'Treino rápido':id==='SOS'?'SOS costas':'Treino',list:items});
   if(!s.nocool)blocks.push({ph:'Volta à calma',wc:1,list:COOL.map(x=>({e:x[0],r:x[1],s:1,rest:10}))});
   const units=[];
   blocks.forEach(b=>{
@@ -1576,12 +1642,21 @@ document.addEventListener('click',e=>{
   else if(a==='exchk'){const k=t.dataset.k;ui.done[k]=!ui.done[k];render()}
   else if(a==='setinc'){const k=t.dataset.k,tot=+t.dataset.t;let n=(ui.sets[k]||0)+1;if(n>tot)n=0;ui.sets[k]=n;ui.done[k]=n>=tot;render();
     if(n>0&&n<tot){const r=ui.ex&&ui.ex.rest;if(r)startTimer(r)}else if(n>=tot)toast('Exercício concluído.')}
+  else if(a==='saveL'){
+    const k=t.dataset.k,kg=parseFloat($('#lKg').value),reps=parseInt($('#lRep').value,10);
+    if(isNaN(reps)||reps<1||reps>300){toast('Digite as repetições.');return}
+    S.loads=S.loads||{};const L=S.loads[k]=S.loads[k]||[];const date=todayStr();
+    const rec={date,kg:isNaN(kg)||kg<0?0:Math.round(kg*10)/10,reps};
+    const i=L.findIndex(x=>x.date===date);if(i>=0)L[i]=rec;else L.push(rec);
+    if(L.length>40)L.splice(0,L.length-40);
+    save();render();toast('Carga salva.')}
+  else if(a==='ci'){const [k,v]=id.split(':');const r=dayRec(todayStr());r.ci=r.ci||{};r.ci[k]=+v;save();render()}
   else if(a==='gpanel'){ui.gpanel=(ui.gpanel===id?null:id)||null;render()}
   else if(a==='finish'){
     const date=$('#fDate').value||todayStr(),pain=+$('#fPain').value,note=$('#fNote').value.trim();
     const s=SESS[ui.session];
     const before=calc();
-    S.workouts.push({id:uid(),date,session:s.id,mode:s.id==='MIN'?'min':ui.mode,pain,note});
+    S.workouts.push({id:uid(),date,session:s.id,mode:isQ(s.id)?'min':ui.mode,pain,note});
     const after=calc();
     save();Object.keys(ui.done).forEach(k=>{if(k.startsWith(s.id+'_')||(s.id==='F'&&k.startsWith('F_')))delete ui.done[k]});
     const gained=after.total-before.total,inf=after.info[date]||{base:0,bonus:0},pv=before.info[date]||{base:0,bonus:0};
