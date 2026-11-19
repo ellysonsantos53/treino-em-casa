@@ -52,6 +52,8 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 24px;-webkit-over
 .num{font-family:var(--font-d);font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .ci{display:grid;gap:6px;margin-top:10px}
+.stats .stat .num.sm{font-size:22px}
+.avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(150deg,var(--accent),#1B3FBF);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:28px;flex:none}
 .ci .seg{grid-template-columns:repeat(3,1fr)}
 .ci .seg button{font-size:13px;padding:8px 4px;min-height:38px}
 .stats .stat .num{font-size:28px}
@@ -90,15 +92,15 @@ ul.how{margin:8px 0 0;padding-left:20px} ul.how li{margin:4px 0}
 .timer{position:sticky;bottom:0;z-index:2;display:flex;gap:6px;align-items:center;justify-content:space-between;background:var(--ink);color:var(--bg);border-radius:14px;padding:8px 10px;margin-top:4px}
 .timer .btn{min-height:36px;padding:0 10px;font-size:14px;background:transparent;color:var(--bg);border-color:rgba(127,127,127,.5)}
 .timer b{font-family:var(--font-d);font-size:26px;min-width:56px;font-variant-numeric:tabular-nums}
-.tabs{display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
-.tabs button{border:0;background:transparent;min-height:52px;padding:0;border-radius:10px;font-size:11.5px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.tabs{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.tabs button{border:0;background:transparent;min-height:52px;padding:0;border-radius:10px;font-size:10.5px;letter-spacing:-.1px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button.on{color:var(--accent)}
 label.item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 label.item:first-of-type{border-top:0}
 label.item .t{flex:1}
 label.item.got .t b{text-decoration:line-through;color:var(--muted)}
-input[type=number],input[type=date],textarea{width:100%;min-height:46px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:8px 12px}
+input[type=number],input[type=date],input[type=text],textarea{width:100%;min-height:46px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:8px 12px}
 textarea{min-height:70px;resize:vertical}
 input[type=range]{width:100%;accent-color:var(--accent);min-height:36px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -342,6 +344,7 @@ button{transition:transform .08s}
     <button data-act="tab" data-id="compras"><svg viewBox="0 0 24 24"><path d="M5 7h15l-1.5 9H7zM5 7L4 3H2M9 20h.01M17 20h.01"/></svg>Compras</button>
     <button data-act="tab" data-id="evolucao"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Evolução</button>
     <button data-act="tab" data-id="premios"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg>Prêmios</button>
+    <button data-act="tab" data-id="perfil"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>Perfil</button>
   </nav>
   <div class="toast" id="toast" hidden></div>
 </div>
@@ -628,7 +631,7 @@ const BADGES=[
   {id:'b_min',n:'Salvou o dia',d:'3 treinos rápidos',t:c=>c.mins>=3},
   {id:'b_meas',n:'Fita na mão',d:'Registrar a cintura',t:c=>c.meas>=1},
   {id:'b_drop',n:'Cintura -2 cm',d:'Reduzir 2 cm desde a 1ª medida',t:c=>c.drop>=2},
-  {id:'b_day',n:'Dia completo',d:'Treino, 2,5 L de água e 4 refeições no mesmo dia',t:c=>c.days>=1},
+  {id:'b_day',n:'Dia completo',d:'Treino, meta de água e 4 refeições no mesmo dia',t:c=>c.days>=1},
   {id:'b_day5',n:'5 dias completos',d:'5 dias com treino, água e comida em dia',t:c=>c.days>=5}
 ];
 
@@ -640,7 +643,7 @@ const parse=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2
 const todayStr=()=>fmt(new Date());
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,9);
-function fresh(){return {v:1,u:0,workouts:[],weights:[{date:todayStr(),kg:65,waist:null}],have:{g_halter:true,g_elastico:true,g_cadeira:true},food:{},spend:null,daily:{},voice:{on:true,warn:10,explain:true,rate:1},shields:[],rewards:DEFAULT_REWARDS.map(r=>Object.assign({},r)),redeemed:[]}}
+function fresh(){return {v:1,u:0,workouts:[],weights:[{date:todayStr(),kg:65,waist:null}],have:{g_halter:true,g_elastico:true,g_cadeira:true},food:{},spend:null,daily:{},voice:{on:true,warn:10,explain:true,rate:1},shields:[],profile:{},measures:[],rewards:DEFAULT_REWARDS.map(r=>Object.assign({},r)),redeemed:[]}}
 let S=fresh();
 function loadLocal(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){return null}}
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -690,7 +693,16 @@ function stats(){
   return {cur,best,week,wk,total:S.workouts.length}
 }
 const PTS={full:100,short:70,min:40};
-const WATER_GOAL=2500;
+let WATER_GOAL=2500;
+const PDEF={name:'Ellyson',age:22,sex:'M',height:174,goal:'',target:null,water:2500,notes:''};
+function prof(){return Object.assign({},PDEF,S.profile||{})}
+function curKg(){const w=S.weights.slice().sort((a,b)=>a.date<b.date?-1:1);return w.length?w[w.length-1].kg:65}
+function goals(){const p=prof(),w=curKg(),bmr=10*w+6.25*p.height-5*p.age+(p.sex==='F'?-161:5);
+  return {bmr:Math.round(bmr),kcal:Math.round((bmr*1.4+70)/50)*50,pLo:Math.round(1.8*w/5)*5,pHi:Math.round(2*w/5)*5,w}}
+function applyProfile(){WATER_GOAL=prof().water||2500}
+const waterL=()=>(WATER_GOAL/1000).toFixed(1).replace('.',',');
+const kfmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+applyProfile();
 function dayView(d){return (S.daily&&S.daily[d])||{w:0,m:{},sw:{}}}
 function dayRec(d){S.daily=S.daily||{};const r=S.daily[d]||(S.daily[d]={w:0,m:{},sw:{}});r.m=r.m||{};r.sw=r.sw||{};return r}
 function menuOpt(m,d){const r=dayView(d);const wd=(parse(d).getDay()+6)%7;return m.opts[(wd+((r.sw||{})[m.k]||0))%m.opts.length]}
@@ -700,7 +712,7 @@ function waterHint(){
   if(h<17)return 'Tarde: chegue a 6 copos até as 17h.';
   if(h<19)return 'Beba 1 copo antes do treino.';
   if(h<20)return 'Durante o treino: 1 copo, em goles.';
-  return 'Depois do treino: 2 copos. Meta do dia: 10 copos.';
+  return 'Depois do treino: 2 copos. Meta do dia: '+Math.round(WATER_GOAL/250)+' copos.';
 }
 function calc(){
   const base={};S.workouts.forEach(w=>{const p=PTS[w.mode]||100;base[w.date]=Math.max(base[w.date]||0,p)});
@@ -860,20 +872,21 @@ function vHoje(){
     <p class="sub">${esc(s.focus)} · ${items.length} exercícios</p>
     <div class="grid2" style="margin-top:12px"><button class="btn glass" data-act="open" data-id="${id}">Ver detalhes</button><button class="btn glass" data-act="gstart" data-id="MIN">Rápido · 10 min</button></div>
   </section>`;
-  const agua=`<section class="card waterc"><div class="row between"><div class="eyebrow" style="color:#9ADBFF">Água hoje</div><span class="tag" style="color:var(--water)">${((dr.w||0)/1000).toFixed(2).replace('.',',')} de 2,5 L</span></div>
-    <div class="cups">${Array.from({length:10},(_,i)=>`<button class="cup ${i<cups?'on':''}" data-act="cup" data-id="${i}" aria-label="Copo ${i+1}"></button>`).join('')}</div>
+  const agua=`<section class="card waterc"><div class="row between"><div class="eyebrow" style="color:#9ADBFF">Água hoje</div><span class="tag" style="color:var(--water)">${((dr.w||0)/1000).toFixed(2).replace('.',',')} de ${waterL()} L</span></div>
+    <div class="cups">${Array.from({length:Math.round(WATER_GOAL/250)},(_,i)=>`<button class="cup ${i<cups?'on':''}" data-act="cup" data-id="${i}" aria-label="Copo ${i+1}"></button>`).join('')}</div>
     <div class="row between"><button class="btn primary" style="min-height:46px" data-act="water" data-id="250">+ 1 copo</button><button class="btn small ghost" data-act="water" data-id="-250">Desfazer</button></div>
     <p class="small" style="margin-top:8px;opacity:.85">${waterHint()}</p>
     <button class="btn small ghost" style="margin-top:4px" data-act="tab" data-id="comida">O que posso beber</button></section>`;
+  const GL=goals();
   const prot=MEALS.filter(m=>dr.m&&dr.m[m.k]).reduce((a,m)=>a+menuOpt(m,td)[2],0);
   const mrows=MEALS.map(m=>{const o=menuOpt(m,td);const on=!!(dr.m&&dr.m[m.k]);const now=cm.now&&cm.m.k===m.k;
     return `<div class="mrow ${on?'got':''}"><button class="mchk ${on?'on':''}" data-act="meal" data-id="${m.k}" aria-pressed="${on}" aria-label="Marcar ${m.n} como feita">${on?'✓':''}</button>
     <div class="stack" style="gap:2px;flex:1"><div class="row" style="gap:6px"><b>${m.n}</b><span class="tag">${m.t}</span><span class="tag">≈ ${o[2]} g prot.</span>${now?'<span class="tag acc">agora</span>':''}</div>
     <div class="small"><b>${esc(o[0])}.</b> ${esc(o[1])}</div></div>
     <button class="btn small ghost" data-act="swap" data-id="${m.k}" aria-label="Trocar o prato de ${m.n}">Trocar</button></div>`}).join('');
-  const comida=`<section class="card"><div class="row between"><div class="eyebrow">Comida de hoje</div><span class="tag">≈ 2.350 kcal</span></div>
-    <div class="row between" style="margin-top:8px"><span class="small">Proteína nas refeições marcadas</span><b>≈ ${prot} de 115 a 130 g</b></div>
-    <div class="pbar" style="margin:6px 0 10px"><i style="width:${Math.min(100,Math.round(prot/125*100))}%"></i></div>
+  const comida=`<section class="card"><div class="row between"><div class="eyebrow">Comida de hoje</div><span class="tag">≈ ${kfmt(GL.kcal)} kcal</span></div>
+    <div class="row between" style="margin-top:8px"><span class="small">Proteína nas refeições marcadas</span><b>≈ ${prot} de ${GL.pLo} a ${GL.pHi} g</b></div>
+    <div class="pbar" style="margin:6px 0 10px"><i style="width:${Math.min(100,Math.round(prot/((GL.pLo+GL.pHi)/2)*100))}%"></i></div>
     <div>${mrows}</div><p class="tiny muted" style="margin-top:6px">Valores aproximados, só para você ter uma noção.</p></section>`;
   const pw=Math.round((dr.w||0)/WATER_GOAL*100),pm=Math.round(mealsDone/MEALS.length*100);
   const rings=`<div class="rings">
@@ -916,7 +929,7 @@ function vHoje(){
   <details class="card"><summary>O que esperar</summary>
     <div class="stack small" style="margin-top:8px">
       <p>Gordura não sai de um ponto só. Cintura e lombar diminuem junto com o resto, quando treino, comida e sono se somam.</p>
-      <p>Seu peso é de 65 kg para 1,74 m. O melhor caminho é trocar gordura por músculo, sem dieta de corte. Por isso o plano come perto da manutenção, com proteína alta.</p>
+      <p>Seu peso é de ${String(curKg()).replace('.',',')} kg para ${(prof().height/100).toFixed(2).replace('.',',')} m. O melhor caminho é trocar gordura por músculo, sem dieta de corte. Por isso o plano come perto da manutenção, com proteína alta.</p>
       <p>A balança pode subir pouco enquanto a cintura cai. Meça a cintura toda semana na aba Evolução. Força costuma melhorar em 2 a 4 semanas; mudança visível, em 6 a 8.</p>
     </div></details>`;
 }
@@ -964,7 +977,7 @@ function wcard(w,title,link){
     <div class="heat" style="margin-top:10px;grid-template-columns:repeat(7,1fr)">${dots}</div>
     <div class="stats" style="margin-top:10px;grid-template-columns:repeat(3,1fr)">
       <div class="stat"><div class="num">${w.n}/7</div><div class="tiny muted">treinos</div></div>
-      <div class="stat"><div class="num">${w.water}/7</div><div class="tiny muted">dias com 2,5 L</div></div>
+      <div class="stat"><div class="num">${w.water}/7</div><div class="tiny muted">dias com ${waterL()} L</div></div>
       <div class="stat"><div class="num">${w.pts}</div><div class="tiny muted">pontos</div></div>
     </div>
     <ul class="how small" style="margin-top:10px">
@@ -986,6 +999,73 @@ function checkin(){
     else rec='<div class="note small"><b>Tudo certo.</b> Faça o treino de hoje normalmente.</div>';
   }
   return `<section class="card"><div class="eyebrow">Como você está hoje?</div>${row('dor','Dor nas costas')}${row('en','Energia')}${row('sono','Sono da noite')}${rec}</section>`;
+}
+function vPerfil(){
+  const p=prof(),g=goals(),ms=(S.measures||[]).slice().sort((a,b)=>a.date<b.date?-1:1);
+  const ws=S.weights.slice().sort((a,b)=>a.date<b.date?-1:1);
+  const imc=(g.w/Math.pow(p.height/100,2)).toFixed(1).replace('.',',');
+  const nm=(p.name||'').trim();
+  const fm=n=>String(n).replace('.',',');
+  const rows=[['kg','Peso','kg',ws.map(x=>x.kg)],['waist','Cintura','cm',ws.filter(x=>x.waist!=null).map(x=>x.waist)]]
+    .concat([['chest','Peito','cm'],['arm','Braço','cm'],['thigh','Coxa','cm'],['hip','Quadril','cm'],['calf','Panturrilha','cm']].map(k=>[k[0],k[1],k[2],ms.filter(x=>x[k[0]]!=null).map(x=>x[k[0]])]))
+    .filter(r=>r[3].length);
+  const tbl=rows.map(r=>{const a=r[3],last=a[a.length-1],d=a.length>1?Math.round((last-a[0])*10)/10:null;
+    return `<div class="row between small" style="padding:7px 0;border-top:1px solid var(--line)"><span>${r[1]}</span><span><b>${fm(last)} ${r[2]}</b>${d!=null?' <span class="muted">('+(d>0?'+':'')+fm(d)+' desde a 1ª)</span>':''}</span></div>`}).join('');
+  const wopt=[2000,2500,3000].map(v=>`<button data-act="setWater" data-id="${v}" class="${p.water===v?'on':''}">${(v/1000).toFixed(1).replace('.',',')} L</button>`).join('');
+  return `
+  <section class="card"><div class="row" style="gap:12px;flex-wrap:nowrap"><div class="avatar">${esc((nm[0]||'?').toUpperCase())}</div>
+    <div class="stack" style="gap:2px"><h3>${esc(nm||'Seu perfil')}</h3><span class="small muted">${p.age} anos · ${p.height} cm · ${fm(g.w)} kg · IMC ${imc}</span></div></div></section>
+  <section class="card"><h3>Seus dados</h3>
+    <div class="stack" style="margin-top:10px">
+      <label class="field"><span>Nome</span><input type="text" id="pName" maxlength="30" value="${esc(p.name)}"></label>
+      <div class="grid2">
+        <label class="field"><span>Idade</span><input type="number" inputmode="numeric" id="pAge" value="${p.age}"></label>
+        <label class="field"><span>Altura (cm)</span><input type="number" inputmode="numeric" id="pH" value="${p.height}"></label>
+      </div>
+      <label class="field"><span>Sexo (usado só no cálculo de calorias)</span><select id="pSex"><option value="M" ${p.sex!=='F'?'selected':''}>Masculino</option><option value="F" ${p.sex==='F'?'selected':''}>Feminino</option></select></label>
+      <label class="field"><span>Objetivo</span><input type="text" id="pGoal" maxlength="120" placeholder="Ex.: perder barriga e ganhar massa" value="${esc(p.goal)}"></label>
+      <label class="field"><span>Peso desejado (kg, opcional)</span><input type="number" inputmode="decimal" step="0.5" id="pTarget" value="${p.target!=null?p.target:''}"></label>
+      <label class="field"><span>Observações de saúde (só ficam neste aparelho)</span><textarea id="pNotes" placeholder="Ex.: dor lombar, joelho direito sensível">${esc(p.notes)}</textarea></label>
+      <button class="btn primary" data-act="saveP">Salvar dados</button>
+    </div></section>
+  <section class="card"><h3>Registrar medidas</h3>
+    <p class="tiny muted" style="margin-top:4px">Preencha só o que medir. Meça sempre de manhã e do mesmo jeito, uma vez por semana.</p>
+    <div class="stack" style="margin-top:10px">
+      <label class="field"><span>Data</span><input type="date" id="bDate" value="${todayStr()}"></label>
+      <div class="grid2">
+        <label class="field"><span>Peso (kg)</span><input type="number" inputmode="decimal" step="0.1" id="bKg" placeholder="${fm(g.w)}"></label>
+        <label class="field"><span>Cintura (cm)</span><input type="number" inputmode="decimal" step="0.5" id="bWaist"></label>
+        <label class="field"><span>Peito (cm)</span><input type="number" inputmode="decimal" step="0.5" id="bChest"></label>
+        <label class="field"><span>Braço (cm)</span><input type="number" inputmode="decimal" step="0.5" id="bArm"></label>
+        <label class="field"><span>Coxa (cm)</span><input type="number" inputmode="decimal" step="0.5" id="bThigh"></label>
+        <label class="field"><span>Quadril (cm)</span><input type="number" inputmode="decimal" step="0.5" id="bHip"></label>
+        <label class="field"><span>Panturrilha (cm)</span><input type="number" inputmode="decimal" step="0.5" id="bCalf"></label>
+      </div>
+      <button class="btn primary" data-act="saveBody">Salvar medidas</button>
+    </div>
+    ${tbl?`<div style="margin-top:12px"><div class="eyebrow">Últimas medidas</div>${tbl}</div>`:''}
+  </section>
+  <section class="card"><h3>Suas metas</h3>
+    <div class="stats" style="margin-top:8px;grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="num">≈${kfmt(g.kcal)}</div><div class="tiny muted">kcal</div></div>
+      <div class="stat"><div class="num sm">${g.pLo}–${g.pHi}</div><div class="tiny muted">g de proteína</div></div>
+      <div class="stat"><div class="num">${waterL()}</div><div class="tiny muted">L de água</div></div>
+    </div>
+    <p class="tiny muted" style="margin-top:8px">Calorias e proteína são calculadas com seu peso, altura e idade. Mudam quando você atualiza as medidas. Não substitui um nutricionista.</p>
+    <div class="eyebrow" style="margin-top:12px">Meta de água por dia</div>
+    <div class="seg" style="margin-top:6px;grid-template-columns:repeat(3,1fr)">${wopt}</div>
+    ${p.target!=null?`<p class="small" style="margin-top:10px">Peso desejado: <b>${fm(p.target)} kg</b> (faltam ${fm(Math.round(Math.abs(p.target-g.w)*10)/10)} kg).</p>`:''}
+  </section>
+  ${voiceSettings()}
+  <section class="card"><h3>Lembrete do treino</h3><p class="small muted" style="margin-top:6px">O alarme diário fica no app Relógio do celular. Para mudar o horário ou desligar, abra o Relógio.</p></section>
+  <section class="card"><h3>Backup dos seus dados</h3>
+    <p class="small muted" style="margin-top:4px">Seus dados ficam só neste aparelho. Copie um backup de vez em quando, principalmente antes de trocar de celular ou limpar o navegador.</p>
+    <div class="grid2" style="margin-top:10px"><button class="btn" data-act="backup">Copiar backup</button><button class="btn ghost" data-act="backupFile">Baixar arquivo</button></div>
+    <textarea class="out" id="bkTxt" hidden placeholder="Cole aqui um backup para restaurar"></textarea>
+    <button class="btn ghost" style="margin-top:8px;width:100%" data-act="restore">${ui.rconf?'Toque de novo para substituir meus dados':'Restaurar de um backup'}</button>
+    <button class="btn ghost" style="margin-top:8px;width:100%;color:#FF7A7A" data-act="wipe">${ui.wipe?'Toque de novo para apagar tudo':'Apagar todos os meus dados'}</button>
+  </section>
+  <p class="tiny muted" style="text-align:center">Treino em Casa · feito para você</p>`;
 }
 function lembrete(){
   return `<details class="card"><summary>Lembrete diário</summary>
@@ -1131,18 +1211,19 @@ function loadCard(e){
 }
 
 function vComida(){
+  const GL=goals(),PF=prof();
   const wk=(()=>{const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return fmt(d)})();
   const sp=S.spend&&S.spend.week===wk?S.spend.val:'';
   return `
   <section class="card">
     <div class="eyebrow">Metas do dia</div>
     <div class="stats" style="margin-top:8px">
-      <div class="stat"><div class="num">≈2.350</div><div class="tiny muted">kcal</div></div>
-      <div class="stat"><div class="num">115–130</div><div class="tiny muted">g de proteína</div></div>
-      <div class="stat"><div class="num">2–2,5</div><div class="tiny muted">litros de água</div></div>
+      <div class="stat"><div class="num">≈${kfmt(GL.kcal)}</div><div class="tiny muted">kcal</div></div>
+      <div class="stat"><div class="num">${GL.pLo}–${GL.pHi}</div><div class="tiny muted">g de proteína</div></div>
+      <div class="stat"><div class="num">${waterL()}</div><div class="tiny muted">litros de água</div></div>
     </div>
     <details style="margin-top:10px"><summary class="small muted">De onde vêm esses números</summary>
-      <p class="small" style="margin-top:6px">Estimativa pela fórmula de Mifflin-St Jeor para homem de 22 anos, 65 kg e 1,74 m (≈ 1.630 kcal em repouso), vezes 1,4 de atividade leve, mais um pequeno excedente para ganhar músculo. Proteína de 1,8 a 2 g por kg. Não é prescrição. Ajuste: se o peso cair mais de 0,5 kg por semana, coma mais; se subir mais de 0,5 kg por semana durante 3 semanas e a cintura também crescer, tire cerca de 200 kcal. Um nutricionista refina isso.</p></details>
+      <p class="small" style="margin-top:6px">Estimativa pela fórmula de Mifflin-St Jeor para ${PF.sex==='F'?'mulher':'homem'} de ${PF.age} anos, ${String(GL.w).replace('.',',')} kg e ${(PF.height/100).toFixed(2).replace('.',',')} m (≈ ${kfmt(GL.bmr)} kcal em repouso), vezes 1,4 de atividade leve, mais um pequeno excedente para ganhar músculo. Proteína de 1,8 a 2 g por kg. Não é prescrição. Ajuste: se o peso cair mais de 0,5 kg por semana, coma mais; se subir mais de 0,5 kg por semana durante 3 semanas e a cintura também crescer, tire cerca de 200 kcal. Um nutricionista refina isso.</p></details>
   </section>
   ${MEALS.map(m=>`<section class="card meal">
     <div class="row between"><h3>${m.n}</h3><span class="tag">${m.t}</span></div>
@@ -1150,7 +1231,7 @@ function vComida(){
     ${m.opts.map(o=>`<div class="opt"><b>${esc(o[0])}</b> <span class="tag">≈ ${o[2]} g de proteína</span><span class="small">${esc(o[1])}</span></div>`).join('')}
   </section>`).join('')}
   <section class="card"><h3>Água e bebidas</h3>
-    <p class="small muted" style="margin-top:4px">Meta: 2,5 litros por dia, ou 10 copos de 250 ml.</p>
+    <p class="small muted" style="margin-top:4px">Meta: ${waterL()} litros por dia, ou ${Math.round(WATER_GOAL/250)} copos de 250 ml.</p>
     <ul class="how small">
       <li><b>Distribuição:</b> 3 copos de manhã, 3 à tarde, 1 antes do treino, 1 durante (em goles) e 2 depois.</li>
       <li><b>Pode:</b> água (a base de tudo), água com gás, café com pouco ou nenhum açúcar (até 3 xícaras, evite depois das 16h para dormir bem), chá sem açúcar, leite (já está no plano) e 1 copo de suco natural de laranja por dia, no lugar da fruta.</li>
@@ -1298,7 +1379,7 @@ function vPremios(){
       <li>Sequência: +10 por dia seguido, até +50 por treino.</li>
       <li>Semana com 5 treinos: +150. Com 7 treinos: mais +150.</li>
       <li>Registrar a cintura: +20.</li>
-      <li>Dia completo (treino, 2,5 L de água e 4 refeições marcadas): +50.</li>
+      <li>Dia completo (treino, meta de água e 4 refeições marcadas): +50.</li>
       <li>Escudo: você começa com 1 e ganha outro a cada semana com 5 ou mais treinos. Ele cobre um dia sem treino e mantém a sequência.</li>
     </ul></details>
   <details class="card"><summary>Graduações (cordas)</summary>
@@ -1315,6 +1396,8 @@ function summary(){
    'Treinos: '+st.total+' no total, sequência '+st.cur+' dia(s), melhor '+st.best+', esta semana '+st.wk+'/5',
    'Últimos treinos: '+(l.map(w=>w.date+' '+w.session+(w.mode==="short"?"(reduzido)":"")+(w.pain!=null?' dor '+w.pain:'')).join('; ')||'nenhum'),
    'Pontos: '+calc().avail+' disponíveis, '+calc().total+' no total ('+CORDAS[calc().lvl][0]+')',
+   'Perfil: '+prof().age+' anos, '+prof().height+' cm, '+curKg()+' kg'+(prof().goal?'; objetivo: '+prof().goal:'')+(prof().target!=null?'; peso desejado '+prof().target+' kg':'')+(prof().notes?'; observações: '+prof().notes:''),
+   'Medidas extras: '+((S.measures||[]).slice(-3).map(m=>m.date+' '+['chest','arm','thigh','hip','calf'].filter(k=>m[k]!=null).map(k=>k+' '+m[k]).join(', ')).join('; ')||'nenhuma'),
    'Cargas recentes: '+(Object.keys(S.loads||{}).map(k=>{const a=S.loads[k];const x=a[a.length-1];return (EX[k]?EX[k].n:k)+' '+(x.kg>0?x.kg+' kg':'peso do corpo')+' x '+x.reps}).join('; ')||'nenhuma'),
    'Já tenho: '+(hv.join('; ')||'nada'),'Falta comprar: '+(miss.join('; ')||'nada')].join('\n');
 }
@@ -1322,7 +1405,7 @@ function summary(){
 function render(){
   const y=main.scrollTop,app=$('#app');
   app.classList.toggle('full',!!G);
-  const TT={hoje:'Hoje',treino:'Treino',comida:'Comida',compras:'Compras',evolucao:'Evolução',premios:'Prêmios'};
+  const TT={hoje:'Hoje',treino:'Treino',comida:'Comida',compras:'Compras',evolucao:'Evolução',premios:'Prêmios',perfil:'Perfil'};
   const bar=$('#bar'),cta=$('#cta');
   let b='',c='';
   if(G){bar.className='bar'}
@@ -1341,7 +1424,7 @@ function render(){
   let h='';
   if(G)h=vGuiado();
   else if(ui.session)h=vSessao();
-  else h={hoje:vHoje,treino:vTreino,comida:vComida,compras:vCompras,evolucao:vEvolucao,premios:vPremios}[ui.tab]();
+  else h={hoje:vHoje,treino:vTreino,comida:vComida,compras:vCompras,evolucao:vEvolucao,premios:vPremios,perfil:vPerfil}[ui.tab]();
   view.innerHTML=h;
   if(ui._nav){ui._nav=0;view.classList.remove('slide');void view.offsetWidth;view.classList.add('slide')}
   main.scrollTop=y;
@@ -1613,7 +1696,7 @@ async function reviewVideo(file){
     }
     if(!blobs.length)throw {code:'video'};
     const ex=EX[RV.ex];
-    const prompt='Você é um fisioterapeuta e treinador cuidadoso. As imagens são '+blobs.length+' quadros, em ordem cronológica, de um vídeo de um homem de 22 anos fazendo o exercício "'+ex.n+'" em casa. Contexto: ele tem dor nas costas (lombar, coluna e escápulas) e o joelho meio rígido.\n'+
+    const prompt='Você é um fisioterapeuta e treinador cuidadoso. As imagens são '+blobs.length+' quadros, em ordem cronológica, de um vídeo de '+(prof().sex==='F'?'uma mulher':'um homem')+' de '+prof().age+' anos fazendo o exercício "'+ex.n+'" em casa. Contexto: ele tem dor nas costas (lombar, coluna e escápulas) e o joelho meio rígido.\n'+
       'Como o exercício deve ser feito: '+ex.how.join(' ')+' Atenção: '+ex.tip+'\n'+
       'Avalie só o que dá para ver nos quadros: alinhamento da coluna (neutra ou arredondada/arqueada), posição dos joelhos em relação aos pés, amplitude e posição de ombros e quadril. Você não consegue ver ritmo nem contar repetições, e não deve fingir que consegue.\n'+
       'Responda em português do Brasil, em texto simples sem markdown, curto, neste formato:\nO que está bom: (1 ou 2 itens)\nO que corrigir: (até 3 itens, cada um com o que fazer diferente)\nSe algo sugerir risco para a coluna ou o joelho, diga para reduzir a carga ou parar e procurar um profissional.\nSe o enquadramento, a luz ou o ângulo não permitirem avaliar, diga como regravar. Não dê diagnóstico e não invente o que não aparece.';
@@ -1632,7 +1715,7 @@ async function reviewVideo(file){
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
   const a=t.dataset.act,id=t.dataset.id;
-  if(a==='tab'){if(G)stopGuided();ui.tab=id;ui.session=null;ui.ex=null;ui._nav=1;render();main.scrollTop=0}
+  if(a==='tab'){ui.wipe=false;ui.rconf=false;if(G)stopGuided();ui.tab=id;ui.session=null;ui.ex=null;ui._nav=1;render();main.scrollTop=0}
   else if(a==='open'){ui.session=id;ui.ex=null;ui.mode='full';ui._nav=1;render();main.scrollTop=0}
   else if(a==='back'){ui.session=null;ui.ex=null;ui._nav=1;render();main.scrollTop=0}
   else if(a==='mode'){ui.mode=id;render()}
@@ -1651,6 +1734,43 @@ document.addEventListener('click',e=>{
     if(L.length>40)L.splice(0,L.length-40);
     save();render();toast('Carga salva.')}
   else if(a==='ci'){const [k,v]=id.split(':');const r=dayRec(todayStr());r.ci=r.ci||{};r.ci[k]=+v;save();render()}
+  else if(a==='saveP'){
+    const age=parseInt($('#pAge').value,10),h=parseInt($('#pH').value,10),t=parseFloat($('#pTarget').value);
+    if(isNaN(age)||age<14||age>90){toast('Confira a idade.');return}
+    if(isNaN(h)||h<120||h>230){toast('Confira a altura.');return}
+    S.profile=Object.assign({},S.profile||{},{name:$('#pName').value.trim().slice(0,30),age,height:h,sex:$('#pSex').value==='F'?'F':'M',goal:$('#pGoal').value.trim().slice(0,120),target:isNaN(t)||t<30||t>200?null:t,notes:$('#pNotes').value.trim().slice(0,400)});
+    save();applyProfile();render();toast('Dados salvos.')}
+  else if(a==='setWater'){S.profile=Object.assign({},S.profile||{},{water:+id});save();applyProfile();render();toast('Meta de água: '+waterL()+' L.')}
+  else if(a==='saveBody'){
+    const g=i=>{const v=parseFloat($(i).value);return isNaN(v)?null:v};
+    const date=$('#bDate').value||todayStr(),kg=g('#bKg'),waist=g('#bWaist');
+    if(kg!=null&&(kg<30||kg>200)){toast('Confira o peso.');return}
+    const ex={chest:g('#bChest'),arm:g('#bArm'),thigh:g('#bThigh'),calf:g('#bCalf'),hip:g('#bHip')};
+    if(kg==null&&waist==null&&!Object.values(ex).some(v=>v!=null)){toast('Preencha pelo menos uma medida.');return}
+    if(kg!=null||waist!=null){
+      const i=S.weights.findIndex(x=>x.date===date);
+      const rec={date,kg:kg!=null?Math.round(kg*10)/10:(i>=0?S.weights[i].kg:curKg()),waist:waist!=null?waist:(i>=0?S.weights[i].waist:null)};
+      if(i>=0)S.weights[i]=rec;else S.weights.push(rec)}
+    if(Object.values(ex).some(v=>v!=null)){
+      S.measures=S.measures||[];const j=S.measures.findIndex(x=>x.date===date);
+      const rec=j>=0?S.measures[j]:{date};Object.keys(ex).forEach(k=>{if(ex[k]!=null)rec[k]=ex[k]});
+      if(j>=0)S.measures[j]=rec;else S.measures.push(rec)}
+    save();render();toast('Medidas salvas.')}
+  else if(a==='backup'){
+    const txt=JSON.stringify(S);const o=$('#bkTxt');o.hidden=false;o.value=txt;o.focus();o.select();
+    try{navigator.clipboard.writeText(txt).then(()=>toast('Backup copiado.'),()=>toast('Selecione o texto e copie.'))}catch(x){toast('Selecione o texto e copie.')}}
+  else if(a==='backupFile'){
+    try{const b=new Blob([JSON.stringify(S)],{type:'application/json'});const u=URL.createObjectURL(b);const l=document.createElement('a');l.href=u;l.download='treino-em-casa-backup-'+todayStr()+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Arquivo baixado.')}catch(x){toast('Não deu para baixar. Use Copiar backup.')}}
+  else if(a==='restore'){
+    const o=$('#bkTxt');
+    if(o.hidden){o.hidden=false;o.focus();toast('Cole o backup e toque de novo.');return}
+    let d=null;try{d=JSON.parse(o.value)}catch(x){}
+    if(!d||!Array.isArray(d.workouts)||!Array.isArray(d.weights)){toast('Esse texto não parece um backup.');return}
+    if(!ui.rconf){ui.rconf=true;render();$('#bkTxt').hidden=false;$('#bkTxt').value=o.value;return}
+    ui.rconf=false;S=Object.assign(fresh(),d);S.u=Date.now();save();applyProfile();render();toast('Backup restaurado.')}
+  else if(a==='wipe'){
+    if(!ui.wipe){ui.wipe=true;render();return}
+    ui.wipe=false;S=fresh();S.u=Date.now();save();applyProfile();render();toast('Dados apagados.')}
   else if(a==='gpanel'){ui.gpanel=(ui.gpanel===id?null:id)||null;render()}
   else if(a==='finish'){
     const date=$('#fDate').value||todayStr(),pain=+$('#fPain').value,note=$('#fNote').value.trim();
