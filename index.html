@@ -53,7 +53,15 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 24px;-webkit-over
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .ci{display:grid;gap:6px;margin-top:10px}
 .stats .stat .num.sm{font-size:22px}
-.avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(150deg,var(--accent),#1B3FBF);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:28px;flex:none}
+.livemini{display:none;position:sticky;top:0;z-index:6;margin-bottom:10px;padding:9px 12px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);font-size:13px;justify-content:space-between;gap:8px}
+.livemini.show{display:flex}
+.gauge{position:relative;height:12px;border-radius:99px;margin:12px 0 6px;background:linear-gradient(90deg,#4F8DFF 0 14%,#2FBF71 14% 40%,#F5B83D 40% 60%,#F2674A 60% 100%)}
+.gauge i{position:absolute;top:-4px;width:6px;height:20px;border-radius:3px;background:#fff;box-shadow:0 0 0 2px var(--bg);transform:translateX(-3px);transition:left .25s}
+.gl{display:grid;grid-template-columns:14fr 26fr 20fr 40fr;font-size:10px;color:var(--muted);text-align:center}
+.imcn{font-family:var(--font-d);font-size:54px;line-height:1}
+.avatar.big{width:72px;height:72px;font-size:36px;cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar{overflow:hidden;width:54px;height:54px;border-radius:50%;background:linear-gradient(150deg,var(--accent),#1B3FBF);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:28px;flex:none}
 .ci .seg{grid-template-columns:repeat(3,1fr)}
 .ci .seg button{font-size:13px;padding:8px 4px;min-height:38px}
 .stats .stat .num{font-size:28px}
@@ -699,6 +707,56 @@ function prof(){return Object.assign({},PDEF,S.profile||{})}
 function curKg(){const w=S.weights.slice().sort((a,b)=>a.date<b.date?-1:1);return w.length?w[w.length-1].kg:65}
 function goals(){const p=prof(),w=curKg(),bmr=10*w+6.25*p.height-5*p.age+(p.sex==='F'?-161:5);
   return {bmr:Math.round(bmr),kcal:Math.round((bmr*1.4+70)/50)*50,pLo:Math.round(1.8*w/5)*5,pHi:Math.round(2*w/5)*5,w}}
+function lastWaist(){const w=S.weights.filter(x=>x.waist!=null).sort((a,b)=>a.date<b.date?-1:1);return w.length?w[w.length-1].waist:null}
+function calcBody(v){
+  const m=v.h/100,imc=v.kg/(m*m);
+  const cat=imc<18.5?['Abaixo do peso','#4F8DFF']:imc<25?['Peso normal','#2FBF71']:imc<30?['Sobrepeso','#F5B83D']:['Obesidade','#F2674A'];
+  const bmr=10*v.kg+6.25*v.h-5*v.age+(v.sex==='F'?-161:5);
+  return {imc,cat,lo:18.5*m*m,hi:24.9*m*m,bmr:Math.round(bmr),kcal:Math.round((bmr*1.4+70)/50)*50,pLo:Math.round(1.8*v.kg/5)*5,pHi:Math.round(2*v.kg/5)*5,
+    water:Math.max(2000,Math.min(3500,Math.round(35*v.kg/250)*250)),whtr:v.waist!=null?v.waist/v.h:null,
+    toT:v.t!=null?Math.round((v.t-v.kg)*10)/10:null,imcT:v.t!=null?v.t/(m*m):null}
+}
+function liveVals(){
+  const p=prof();
+  const num=(id,def)=>{const el=document.querySelector(id);if(!el||el.value==='')return def;const x=parseFloat(el.value);return isNaN(x)?def:x};
+  const se=document.querySelector('#pSex');
+  return {age:num('#pAge',p.age),h:num('#pH',p.height),sex:se?se.value:p.sex,kg:num('#bKg',curKg()),waist:num('#bWaist',lastWaist()),t:num('#pTarget',p.target)};
+}
+function liveInner(v){
+  const f=(n,d)=>(Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toFixed(d).replace('.',',');
+  if(!(v.age>=14&&v.age<=90&&v.h>=120&&v.h<=230&&v.kg>=30&&v.kg<=200))return '<p class="small muted">Preencha idade, altura e peso com valores válidos para ver os números.</p>';
+  const b=calcBody(v),pos=Math.max(0,Math.min(100,(b.imc-15)/25*100));
+  const p=prof(),pending=(v.age!==p.age||v.h!==p.height||v.sex!==p.sex||v.kg!==curKg()||v.t!==p.target||v.waist!==lastWaist());
+  const dist=b.toT==null?'—':(b.toT===0?'na meta':(b.toT>0?'+':'')+f(b.toT,1)+' kg');
+  const wr=b.whtr==null?['—','sem cintura']:[f(b.whtr,2),b.whtr<0.5?'abaixo de 0,50, bom':'meta: abaixo de 0,50'];
+  return `<div class="row between" style="align-items:flex-end"><div><div class="tiny muted">IMC</div><div class="imcn" style="color:${b.cat[1]}">${f(b.imc,1)}</div></div><span class="tag" style="color:${b.cat[1]};border-color:${b.cat[1]}">${b.cat[0]}</span></div>
+    <div class="gauge"><i style="left:${pos}%"></i></div>
+    <div class="gl"><span>Abaixo</span><span>Normal</span><span>Sobrepeso</span><span>Obesidade</span></div>
+    <div class="stats" style="margin-top:12px;grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="num sm">${f(b.lo,0)}–${f(b.hi,0)}</div><div class="tiny muted">kg, faixa normal para ${v.h} cm</div></div>
+      <div class="stat"><div class="num sm">≈${kfmt(b.kcal)}</div><div class="tiny muted">kcal por dia</div></div>
+      <div class="stat"><div class="num sm">${b.pLo}–${b.pHi}</div><div class="tiny muted">g de proteína</div></div>
+      <div class="stat"><div class="num sm">${f(b.water/1000,2).replace(/0$/,'')}</div><div class="tiny muted">L de água sugeridos</div></div>
+      <div class="stat"><div class="num sm">${wr[0]}</div><div class="tiny muted">cintura ÷ altura, ${wr[1]}</div></div>
+      <div class="stat"><div class="num sm">${dist}</div><div class="tiny muted">até o peso desejado${b.imcT!=null?' (IMC '+f(b.imcT,1)+')':''}</div></div>
+    </div>
+    ${pending?'<p class="tiny" style="margin-top:8px;color:var(--accent)">Prévia com os valores que você digitou. Salve para aplicar no app.</p>':''}
+    <p class="tiny muted" style="margin-top:8px">O IMC não separa gordura de músculo. Como você quer perder barriga e ganhar massa, acompanhe também a cintura e as medidas.</p>`;
+}
+function miniTxt(v){
+  if(!(v.age>=14&&v.age<=90&&v.h>=120&&v.h<=230&&v.kg>=30&&v.kg<=200))return '<span>Valores inválidos</span>';
+  const b=calcBody(v);return `<b style="color:${b.cat[1]}">IMC ${b.imc.toFixed(1).replace('.',',')}</b><span>${b.cat[0]}</span><span>≈${kfmt(b.kcal)} kcal</span><span>${b.pLo}–${b.pHi} g prot.</span>`}
+function setPhotoFile(f){
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onerror=()=>toast('Não consegui ler a foto.');
+  rd.onload=()=>{const img=new Image();
+    img.onerror=()=>toast('Não consegui abrir essa imagem.');
+    img.onload=()=>{const n=Math.min(img.width,img.height),sx=(img.width-n)/2,sy=(img.height-n)/2;
+      const c=document.createElement('canvas');c.width=c.height=256;c.getContext('2d').drawImage(img,sx,sy,n,n,0,0,256,256);
+      S.profile=Object.assign({},S.profile||{},{photo:c.toDataURL('image/jpeg',0.82)});save();render();toast('Foto salva.')};
+    img.src=rd.result};
+  rd.readAsDataURL(f)}
 function applyProfile(){WATER_GOAL=prof().water||2500}
 const waterL=()=>(WATER_GOAL/1000).toFixed(1).replace('.',',');
 const kfmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -1013,8 +1071,14 @@ function vPerfil(){
     return `<div class="row between small" style="padding:7px 0;border-top:1px solid var(--line)"><span>${r[1]}</span><span><b>${fm(last)} ${r[2]}</b>${d!=null?' <span class="muted">('+(d>0?'+':'')+fm(d)+' desde a 1ª)</span>':''}</span></div>`}).join('');
   const wopt=[2000,2500,3000].map(v=>`<button data-act="setWater" data-id="${v}" class="${p.water===v?'on':''}">${(v/1000).toFixed(1).replace('.',',')} L</button>`).join('');
   return `
-  <section class="card"><div class="row" style="gap:12px;flex-wrap:nowrap"><div class="avatar">${esc((nm[0]||'?').toUpperCase())}</div>
-    <div class="stack" style="gap:2px"><h3>${esc(nm||'Seu perfil')}</h3><span class="small muted">${p.age} anos · ${p.height} cm · ${fm(g.w)} kg · IMC ${imc}</span></div></div></section>
+  <div class="livemini" id="liveMini">${miniTxt(liveVals())}</div>
+  <section class="card"><div class="row" style="gap:14px;flex-wrap:nowrap"><label class="avatar big" for="phPick" aria-label="Trocar foto">${p.photo?`<img src="${esc(p.photo)}" alt="">`:esc((nm[0]||'?').toUpperCase())}</label>
+    <div class="stack" style="gap:2px"><h3>${esc(nm||'Seu perfil')}</h3><span class="small muted" id="pHeadTxt">${p.age} anos · ${p.height} cm · ${fm(g.w)} kg · IMC ${imc}</span></div></div>
+    <div class="grid2" style="margin-top:12px"><label class="btn small ghost" for="phCam" style="display:flex;align-items:center;justify-content:center">Tirar foto</label><label class="btn small ghost" for="phPick" style="display:flex;align-items:center;justify-content:center">Escolher da galeria</label></div>
+    ${p.photo?'<button class="btn small ghost" style="margin-top:8px;width:100%" data-act="rmPhoto">Remover foto</button>':''}
+    <input type="file" id="phCam" accept="image/*" capture="user" hidden><input type="file" id="phPick" accept="image/*" hidden>
+    <p class="tiny muted" style="margin-top:8px">A foto é reduzida e fica só neste aparelho.</p></section>
+  <section class="card" id="liveBox"><div class="row between"><h3>Seus números</h3><span class="tag">ao vivo</span></div><div id="liveIn" style="margin-top:6px">${liveInner(liveVals())}</div></section>
   <section class="card"><h3>Seus dados</h3>
     <div class="stack" style="margin-top:10px">
       <label class="field"><span>Nome</span><input type="text" id="pName" maxlength="30" value="${esc(p.name)}"></label>
@@ -1428,8 +1492,10 @@ function render(){
   view.innerHTML=h;
   if(ui._nav){ui._nav=0;view.classList.remove('slide');void view.offsetWidth;view.classList.add('slide')}
   main.scrollTop=y;
+  const lm=$('#liveMini');if(lm)lm.classList.toggle('show',main.scrollTop>260);
 }
 
+main.addEventListener('scroll',()=>{const lm=$('#liveMini');if(lm)lm.classList.toggle('show',main.scrollTop>260)},{passive:true});
 /* ========== Treino guiado com voz ========== */
 const V={mode:'none',voice:null,heard:false,tts:null};
 let AC=null,wl=null,praiseI=0;
@@ -1740,6 +1806,7 @@ document.addEventListener('click',e=>{
     if(isNaN(h)||h<120||h>230){toast('Confira a altura.');return}
     S.profile=Object.assign({},S.profile||{},{name:$('#pName').value.trim().slice(0,30),age,height:h,sex:$('#pSex').value==='F'?'F':'M',goal:$('#pGoal').value.trim().slice(0,120),target:isNaN(t)||t<30||t>200?null:t,notes:$('#pNotes').value.trim().slice(0,400)});
     save();applyProfile();render();toast('Dados salvos.')}
+  else if(a==='rmPhoto'){const q=Object.assign({},S.profile||{});delete q.photo;S.profile=q;save();render();toast('Foto removida.')}
   else if(a==='setWater'){S.profile=Object.assign({},S.profile||{},{water:+id});save();applyProfile();render();toast('Meta de água: '+waterL()+' L.')}
   else if(a==='saveBody'){
     const g=i=>{const v=parseFloat($(i).value);return isNaN(v)?null:v};
@@ -1834,13 +1901,21 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='rvEx'){RV.ex=t.value;return}
+  if(t.id==='phCam'||t.id==='phPick'){const f=t.files&&t.files[0];if(f)setPhotoFile(f);t.value='';return}
   if(t.id==='rvFile'||t.id==='rvFile2'){const f=t.files&&t.files[0];if(f)reviewVideo(f);t.value='';return}
   if(t.dataset&&t.dataset.act==='exdone'){
     ui.done[t.dataset.k]=t.checked;
     const c=document.getElementById('c_'+t.dataset.k);if(c)c.classList.toggle('done',t.checked);
   }
 });
-document.addEventListener('input',e=>{if(e.target.id==='fPain'){$('#painV').textContent=e.target.value}});
+document.addEventListener('input',e=>{
+  const id=e.target.id;
+  if(id==='fPain'){$('#painV').textContent=e.target.value;return}
+  if(['pAge','pH','pSex','bKg','bWaist','pTarget'].indexOf(id)>=0){
+    const box=$('#liveIn');if(!box)return;const v=liveVals();box.innerHTML=liveInner(v);const lm=$('#liveMini');if(lm)lm.innerHTML=miniTxt(v);
+    const h=$('#pHeadTxt');if(h&&v.age>=14&&v.h>=120&&v.kg>=30){const b=calcBody(v);h.textContent=v.age+' anos · '+v.h+' cm · '+String(v.kg).replace('.',',')+' kg · IMC '+b.imc.toFixed(1).replace('.',',')}
+  }
+});
 
 render();
 initVoice();
