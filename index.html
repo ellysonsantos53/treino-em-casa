@@ -53,6 +53,15 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 24px;-webkit-over
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .ci{display:grid;gap:6px;margin-top:10px}
 .stats .stat .num.sm{font-size:22px}
+.thg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.th{position:relative;border:0;padding:0;border-radius:12px;overflow:hidden;aspect-ratio:3/4;background:var(--surface2)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th span{position:absolute;left:6px;bottom:6px;font-size:11px;background:rgba(0,0,0,.6);padding:2px 7px;border-radius:8px;color:#fff}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cmpi{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:var(--surface2);display:block}
+.cmpi.empty{display:flex;align-items:center;justify-content:center;text-align:center;padding:8px}
+.pm{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px}
+.pm img{max-width:100%;max-height:72vh;border-radius:12px}
 .livemini{display:none;position:sticky;top:0;z-index:6;margin-bottom:10px;padding:9px 12px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);font-size:13px;justify-content:space-between;gap:8px}
 .livemini.show{display:flex}
 .gauge{position:relative;height:12px;border-radius:99px;margin:12px 0 6px;background:linear-gradient(90deg,#4F8DFF 0 14%,#2FBF71 14% 40%,#F5B83D 40% 60%,#F2674A 60% 100%)}
@@ -1371,6 +1380,61 @@ function chart(pts,unit){
    <text x="${Math.min(x(last.d),W-pr)}" y="${(y(last.v)-9).toFixed(1)}" text-anchor="end" style="fill:var(--ink);font-weight:600;font-size:11px">${last.v} ${unit}</text>
    <text x="${pl}" y="${H-6}">${lab(pts[0].d)}</text><text x="${W-pr}" y="${H-6}" text-anchor="end">${pts.length>1?lab(last.d):''}</text></svg>`;
 }
+/* ===== Fotos de evolução (guardadas no aparelho, em IndexedDB) ===== */
+const PH={list:[],ok:true,ready:false};let phDb=null;
+const PAN={front:'Frente',side:'Lado',back:'Costas'};
+function phOpen(){return new Promise((res,rej)=>{try{const r=indexedDB.open('treino-fotos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+async function phLoad(){
+  try{phDb=await phOpen();PH.list=await new Promise((res,rej)=>{const q=phDb.transaction('p').objectStore('p').getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});PH.ok=true}
+  catch(e){PH.ok=false}
+  PH.ready=true;if(ui.tab==='evolucao'&&!ui.session&&!G)render()}
+function phSave(rec){return new Promise((res,rej)=>{const tx=phDb.transaction('p','readwrite');tx.objectStore('p').put(rec);tx.oncomplete=()=>{PH.list=PH.list.filter(x=>x.id!==rec.id).concat([rec]);res()};tx.onerror=()=>rej(tx.error)})}
+function phRemove(id){return new Promise((res,rej)=>{const tx=phDb.transaction('p','readwrite');tx.objectStore('p').delete(id);tx.oncomplete=()=>{PH.list=PH.list.filter(x=>x.id!==id);res()};tx.onerror=()=>rej(tx.error)})}
+function addProgressPhoto(f,angle){
+  if(!f||!PH.ok||!phDb){toast('Fotos indisponíveis neste modo.');return}
+  const rd=new FileReader();rd.onerror=()=>toast('Não consegui ler a foto.');
+  rd.onload=()=>{const img=new Image();img.onerror=()=>toast('Não consegui abrir essa imagem.');
+    img.onload=()=>{const k=Math.min(1,720/Math.max(img.width,img.height)),w=Math.round(img.width*k),h=Math.round(img.height*k);
+      const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      const date=todayStr();phSave({id:date+'_'+angle,date,angle,url:c.toDataURL('image/jpeg',0.75)}).then(()=>{render();toast('Foto salva.')},()=>toast('Não consegui salvar a foto.'))};
+    img.src=rd.result};
+  rd.readAsDataURL(f)}
+function wAt(d,key){const a=S.weights.filter(x=>x.date<=d&&x[key]!=null).sort((x,y)=>x.date<y.date?-1:1);return a.length?a[a.length-1][key]:null}
+function vFotos(){
+  if(!PH.ok)return `<section class="card"><h3>Fotos de evolução</h3><p class="small muted" style="margin-top:6px">As fotos precisam do armazenamento do navegador, que está bloqueado aqui dentro do Claude. No app instalado no celular elas funcionam.</p></section>`;
+  if(!PH.ready)return `<section class="card"><h3>Fotos de evolução</h3><p class="small muted" style="margin-top:6px">Carregando...</p></section>`;
+  const pa=ui.pa||'front',fd=d=>d.split('-').reverse().join('/'),fm=n=>String(n).replace('.',',');
+  const dates=Array.from(new Set(PH.list.map(x=>x.date))).sort();
+  let cmp='';
+  if(dates.length>=2){
+    const ang=ui.cmpAng||'front',A=ui.cmpA&&dates.includes(ui.cmpA)?ui.cmpA:dates[0],B=ui.cmpB&&dates.includes(ui.cmpB)?ui.cmpB:dates[dates.length-1];
+    const pA=PH.list.find(x=>x.date===A&&x.angle===ang),pB=PH.list.find(x=>x.date===B&&x.angle===ang);
+    const opts=sel=>dates.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${fd(d)}</option>`).join('');
+    const days=Math.round((parse(B)-parse(A))/864e5);
+    const line=k=>{const a=wAt(A,k),b=wAt(B,k);return a!=null&&b!=null?`${fm(a)} → ${fm(b)} ${k==='kg'?'kg':'cm'} (${b-a>0?'+':''}${fm(Math.round((b-a)*10)/10)})`:null};
+    const kg=line('kg'),wa=line('waist');
+    const box=(pp,d)=>pp?`<div><img class="cmpi" src="${pp.url}" alt=""><div class="tiny muted" style="text-align:center;margin-top:4px">${fd(d)}</div></div>`:`<div class="cmpi empty tiny muted">Sem foto de ${PAN[ang].toLowerCase()} em ${fd(d)}</div>`;
+    cmp=`<div class="eyebrow" style="margin-top:14px">Comparar</div>
+      <div class="grid2" style="margin-top:6px"><label class="field"><span>Antes</span><select id="cmpA">${opts(A)}</select></label><label class="field"><span>Depois</span><select id="cmpB">${opts(B)}</select></label></div>
+      <div class="seg" style="margin-top:8px;grid-template-columns:repeat(3,1fr)">${Object.keys(PAN).map(k=>`<button data-act="cmpang" data-id="${k}" class="${ang===k?'on':''}">${PAN[k]}</button>`).join('')}</div>
+      <div class="cmp" style="margin-top:8px">${box(pA,A)}${box(pB,B)}</div>
+      <p class="small" style="margin-top:8px">${days>0?days+' dias entre as fotos.':''}${kg?'<br>Peso: '+kg:''}${wa?'<br>Cintura: '+wa:''}</p>`;
+  }
+  const gal=dates.slice().reverse().map(d=>`<div style="margin-top:12px"><div class="small"><b>${fd(d)}</b></div><div class="thg" style="margin-top:6px">${Object.keys(PAN).map(k=>{const x=PH.list.find(y=>y.date===d&&y.angle===k);return x?`<button class="th" data-act="phview" data-id="${x.id}"><img src="${x.url}" alt=""><span>${PAN[k]}</span></button>`:''}).join('')}</div></div>`).join('');
+  return `<section class="card"><div class="row between"><h3>Fotos de evolução</h3><span class="tag">${PH.list.length} fotos</span></div>
+    <p class="tiny muted" style="margin-top:4px">Tire a cada 2 a 4 semanas, no mesmo lugar, com a mesma luz e distância, de manhã. As fotos ficam só neste aparelho e não entram no backup.</p>
+    <div class="seg" style="margin-top:10px;grid-template-columns:repeat(3,1fr)">${Object.keys(PAN).map(k=>`<button data-act="pang" data-id="${k}" class="${pa===k?'on':''}">${PAN[k]}</button>`).join('')}</div>
+    <div class="grid2" style="margin-top:8px"><label class="btn small primary" for="prCam" style="display:flex;align-items:center;justify-content:center">Tirar foto</label><label class="btn small ghost" for="prPick" style="display:flex;align-items:center;justify-content:center">Da galeria</label></div>
+    <input type="file" id="prCam" accept="image/*" capture="environment" hidden><input type="file" id="prPick" accept="image/*" hidden>
+    <p class="tiny muted" style="margin-top:6px">Ângulo selecionado: <b>${PAN[pa]}</b>. Uma nova foto no mesmo dia e ângulo substitui a anterior.</p>
+    ${cmp}${gal}</section>`;
+}
+function showPhoto(id){
+  const x=PH.list.find(y=>y.id===id);if(!x)return;closePhoto();
+  const m=document.createElement('div');m.className='pm';m.id='pmodal';
+  m.innerHTML=`<img src="${x.url}" alt=""><div class="tiny" style="color:#fff">${x.date.split('-').reverse().join('/')} · ${PAN[x.angle]}</div><div class="grid2" style="width:100%;max-width:360px"><button class="btn" data-act="phclose">Fechar</button><button class="btn" style="color:#FF7A7A" data-act="phdel" data-id="${x.id}">Excluir</button></div>`;
+  $('#app').appendChild(m)}
+function closePhoto(){const m=document.getElementById('pmodal');if(m)m.remove()}
 function vEvolucao(){
   const ws=S.weights.slice().sort((a,b)=>a.date<b.date?-1:1);
   const wp=ws.map(w=>({d:w.date,v:w.kg})),cp=ws.filter(w=>w.waist).map(w=>({d:w.date,v:w.waist}));
@@ -1395,6 +1459,7 @@ function vEvolucao(){
   ${(()=>{const x=parse(monKey(todayStr()));x.setDate(x.getDate()-7);const w=weekData(fmt(x));return w.n||w.pts?wcard(w,'Semana passada',false):''})()}
   <section class="card"><div class="eyebrow">Peso</div>${chart(wp,'kg')}</section>
   <section class="card"><div class="eyebrow">Cintura</div>${chart(cp,'cm')}</section>
+  ${vFotos()}
   <section class="card"><div class="row between"><div class="eyebrow">Últimas 5 semanas</div><span class="tag">${st.total} treinos</span></div>
     <div class="heat" style="margin-top:10px">${cells.join('')}</div>
     <p class="tiny muted" style="margin-top:8px">Verde forte: treino completo. Verde claro: treino rápido. Contorno: hoje.</p></section>
@@ -1781,7 +1846,7 @@ async function reviewVideo(file){
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
   const a=t.dataset.act,id=t.dataset.id;
-  if(a==='tab'){ui.wipe=false;ui.rconf=false;if(G)stopGuided();ui.tab=id;ui.session=null;ui.ex=null;ui._nav=1;render();main.scrollTop=0}
+  if(a==='tab'){closePhoto();ui.wipe=false;ui.rconf=false;if(G)stopGuided();ui.tab=id;ui.session=null;ui.ex=null;ui._nav=1;render();main.scrollTop=0}
   else if(a==='open'){ui.session=id;ui.ex=null;ui.mode='full';ui._nav=1;render();main.scrollTop=0}
   else if(a==='back'){ui.session=null;ui.ex=null;ui._nav=1;render();main.scrollTop=0}
   else if(a==='mode'){ui.mode=id;render()}
@@ -1806,6 +1871,13 @@ document.addEventListener('click',e=>{
     if(isNaN(h)||h<120||h>230){toast('Confira a altura.');return}
     S.profile=Object.assign({},S.profile||{},{name:$('#pName').value.trim().slice(0,30),age,height:h,sex:$('#pSex').value==='F'?'F':'M',goal:$('#pGoal').value.trim().slice(0,120),target:isNaN(t)||t<30||t>200?null:t,notes:$('#pNotes').value.trim().slice(0,400)});
     save();applyProfile();render();toast('Dados salvos.')}
+  else if(a==='pang'){ui.pa=id;render()}
+  else if(a==='cmpang'){ui.cmpAng=id;render()}
+  else if(a==='phview'){showPhoto(id)}
+  else if(a==='phclose'){ui.pdel=null;closePhoto()}
+  else if(a==='phdel'){
+    if(ui.pdel!==id){ui.pdel=id;t.textContent='Toque de novo para excluir';return}
+    ui.pdel=null;phRemove(id).then(()=>{closePhoto();render();toast('Foto excluída.')},()=>toast('Não consegui excluir.'))}
   else if(a==='rmPhoto'){const q=Object.assign({},S.profile||{});delete q.photo;S.profile=q;save();render();toast('Foto removida.')}
   else if(a==='setWater'){S.profile=Object.assign({},S.profile||{},{water:+id});save();applyProfile();render();toast('Meta de água: '+waterL()+' L.')}
   else if(a==='saveBody'){
@@ -1901,6 +1973,9 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='rvEx'){RV.ex=t.value;return}
+  if(t.id==='cmpA'){ui.cmpA=t.value;render();return}
+  if(t.id==='cmpB'){ui.cmpB=t.value;render();return}
+  if(t.id==='prCam'||t.id==='prPick'){const f=t.files&&t.files[0];if(f)addProgressPhoto(f,ui.pa||'front');t.value='';return}
   if(t.id==='phCam'||t.id==='phPick'){const f=t.files&&t.files[0];if(f)setPhotoFile(f);t.value='';return}
   if(t.id==='rvFile'||t.id==='rvFile2'){const f=t.files&&t.files[0];if(f)reviewVideo(f);t.value='';return}
   if(t.dataset&&t.dataset.act==='exdone'){
@@ -1918,6 +1993,7 @@ document.addEventListener('input',e=>{
 });
 
 render();
+phLoad();
 initVoice();
 initSample();
 initRemote();
